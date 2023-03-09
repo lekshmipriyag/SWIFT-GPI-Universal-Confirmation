@@ -1,5 +1,6 @@
 package com.swift.parseMT103Message.controller;
 
+import com.prowidesoftware.swift.model.SwiftMessage;
 import com.swift.parseMT103Message.model.ResponseData;
 import com.swift.parseMT103Message.model.SwiftMessageMT103;
 import com.swift.parseMT103Message.service.IntermediaryBankService;
@@ -29,6 +30,7 @@ public class IntermediaryBankController {
 
     @RequestMapping(method = RequestMethod.POST, value = "sendMT103ToMongoDB")
     public ResponseEntity sendMT103ToMongoDB(SwiftMessageMT103 swiftMessage) {
+        logger.info("SwiftMessage "+ swiftMessage.getUniqueEndToEndTransactionReferenceNumber());
         return intermediaryBankService.sendMt103ToMongoDB(swiftMessage);
     }
 

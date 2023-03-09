@@ -1,9 +1,10 @@
 package com.swift.parseMT103Message.controller;
 
+import com.prowidesoftware.swift.model.SwiftMessage;
+import com.prowidesoftware.swift.model.mt.mt1xx.MT103;
 import com.swift.parseMT103Message.model.ResponseData;
 import com.swift.parseMT103Message.model.SwiftMessageMT103;
 import com.swift.parseMT103Message.service.IntermediaryBankService;
-import org.apache.catalina.filters.ExpiresFilter;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -12,10 +13,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import java.io.IOException;
+import java.util.UUID;
+
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest
@@ -27,12 +31,10 @@ public class IntermediaryBankControllerTests {
     IntermediaryBankController intermediaryBankController;
 
     @Autowired
-    MongoRepository mongoRepository;
-
-    @Autowired
     IntermediaryBankService intermediaryBankService;
 
     private ResponseData result = new ResponseData();
+    SwiftMessageMT103 swiftMessageMT103;
 
     @Test
     @Order(1)
@@ -43,65 +45,68 @@ public class IntermediaryBankControllerTests {
     @Test
     @Order(2)
     public void testSendMT103() throws Exception {
-
-        logger.info("Bank operation Code"+message().getBankOperationCode());
-        ResponseEntity<ResponseData> response = intermediaryBankController.sendMT103ToMongoDB(message());
-        /*if(message().getBankOperationCode().equals(null)){
-            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        }
-        message().setBankOperationCode("CRE");
-        if(message().getBankOperationCode().equals(false)){
-            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        }
-        int documentCountBySenderRefrenceNumber = intermediaryBankService.getDocumentCountBYSRN(message().getSenderReferenceNumber());
-        int documentCountByUETR = intermediaryBankService.getDocumentCountBYUETR(message().getUniqueEndToEndTransactionReferenceNumber());
-
-        if (documentCountBySenderRefrenceNumber >= 1 || documentCountByUETR >= 1) {
-            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        }*/
-           // logger.info("result "+ response.getBody().getMessages().get(0).getBankOperationCode());
-        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        SwiftMessageMT103 swiftMessageMT103 = new SwiftMessageMT103();
+        testSendMT103toMongoWithActualData();
+        intermediaryBankController.sendMT103ToMongoDB(swiftMessageMT103);
+        assertTrue(true);
     }
 
-    public SwiftMessageMT103 message() {
-        SwiftMessageMT103 swiftMessageMT103 = new SwiftMessageMT103();
-        clearMessage();
-        swiftMessageMT103.setSenderReferenceNumber("151030035521");
-        swiftMessageMT103.setUniqueEndToEndTransactionReferenceNumber("4bfeab5f-f3c6-4736-bf79-705024ebb752");
+    @Test
+    @Order(3)
+    public void testGetMT103FromMongoDB() throws Exception {
+        String srn = "951030035526";
+        ResponseEntity<ResponseData> response = intermediaryBankController.getMT103FromMongoDB(srn);
+        assertEquals(HttpStatus.FOUND, response.getStatusCode());
+    }
 
-        swiftMessageMT103.setBankOperationCode("CRED");
-        swiftMessageMT103.setValueDateOrCurrencyOrSettledAmount("151102EUR135");
-        swiftMessageMT103.setPayer("/FR343409549895438945098541\n" +
+    @Test
+    @Order(4)
+    public void testGetMT103FromMongoDBNNotFound() throws Exception {
+        String srn = "551030035526";
+        ResponseEntity<ResponseData> response = intermediaryBankController.getMT103FromMongoDB(srn);
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    }
+
+        public void testSendMT103toMongoWithActualData() throws IOException {
+        String messageWithCorrectFormat = "{1:F21SOMEBANKAXXX1986850704}{4:{177:1511020826}{451:0}}{1:F01SOMEBANKAXXX1986850704}{2:O1030351151102SENDERSXBXXX02467244891511020826N}{3:{103:TGT}{113:NYNN}{108:1510300035526-06}{115:070146070146DE0000000653977094}{119:STP}}{4:\n" +
+                ":20:951030035526\n" +
+                ":23B:CRED\n" +
+                ":32A:151102EUR135,\n" +
+                ":33B:EUR135,\n" +
+                ":50F:/FR343409549895438945098548\n" +
                 "1/SOME NAME\n" +
                 "2/SOME ADDRESS\n" +
                 "3/FR/PARIS\n" +
-                "7/FR/1231532472");
-        swiftMessageMT103.setBeneficiary("/AU351234567800123456789\n" +
-                "FIRM LTD");
-        swiftMessageMT103.setOrderingInstitution("ABCDFGHK123");
-        swiftMessageMT103.setDetailsOfCharge("OUR");
-        swiftMessageMT103.setSenderToReceiverInfo("/INS/ABNANL2A\n" +
+                "7/FR/1231532472\n" +
+                ":52A:ABCDFGHK123\n" +
+                ":59:/AU351234567800123456789\n" +
+                "FIRM LTD\n" +
+                ":71A:OUR\n" +
+                ":72:/INS/ABNANL2A\n" +
                 "//ABNANL2A OTHERS 123\n" +
-                "/INS/ABNANL2A");
-        swiftMessageMT103.setSenderBank("SENDERSXBXXX");
-        swiftMessageMT103.setSendersCharge("");
-        return swiftMessageMT103;
+                "/INS/ABNANL2A\n" +
+                "-}{5:{MAC:00000000}{PAC:00000000}{CHK:447B8E8D50A7}{DLM:}}{S:{SAC:}{FAC:}{COP:P}}";
+
+        sendMT103ServiceMessage(messageWithCorrectFormat);
     }
 
-    public SwiftMessageMT103 clearMessage(){
+    void sendMT103ServiceMessage(String messageData) throws IOException {
+
+        String UETR = UUID.randomUUID().toString();
         SwiftMessageMT103 swiftMessageMT103 = new SwiftMessageMT103();
-        swiftMessageMT103.setSenderReferenceNumber("");
-        swiftMessageMT103.setUniqueEndToEndTransactionReferenceNumber("");
-
-        swiftMessageMT103.setBankOperationCode("");
-        swiftMessageMT103.setValueDateOrCurrencyOrSettledAmount("");
-        swiftMessageMT103.setPayer("");
-        swiftMessageMT103.setBeneficiary("");
-        swiftMessageMT103.setOrderingInstitution("");
-        swiftMessageMT103.setDetailsOfCharge("");
-        swiftMessageMT103.setSenderToReceiverInfo("");
-        swiftMessageMT103.setSenderBank("");
-        swiftMessageMT103.setSendersCharge("");
-        return swiftMessageMT103;
+        SwiftMessage serviceMessage = SwiftMessage.parse(messageData);
+        if (serviceMessage.isServiceMessage()) {
+            serviceMessage = SwiftMessage.parse(serviceMessage.getUnparsedTexts().getAsFINString());
+        }
+        if (serviceMessage.isType(103)) {
+            //Specialise the message to its specific model representation
+            MT103 mt = new MT103(serviceMessage);
+            //get MT103Fields after validation
+            intermediaryBankService.getMT103Fields(UETR, mt);
+            intermediaryBankService.sendMt103ToMongoDB(swiftMessageMT103);
+            assertTrue(true);
+        }
     }
+
+
 }

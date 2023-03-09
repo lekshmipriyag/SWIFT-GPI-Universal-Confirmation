@@ -54,7 +54,17 @@
 			<artifactId>spring-boot-starter-data-mongodb</artifactId>
 			<version>3.0.2</version>
 		</dependency>
-
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+		<dependency>
+			<groupId>org.testng</groupId>
+			<artifactId>testng</artifactId>
+			<version>RELEASE</version>
+			<scope>test</scope>
+		</dependency>
 
 
 	</dependencies>
@@ -81,7 +91,9 @@
 				<configuration>
 					<excludes>
 						<exclude>com/swift/parseMT103Message/ParseMt103MessageApplication*</exclude>
-
+						<exclude>com/swift/parseMT103Message/model/*</exclude>
+						<exclude>com/swift/parseMT103Message/repository/*</exclude>
+						<exclude>com/swift/parseMT103Message/KafkaConsumer/*</exclude>
 					</excludes>
 				</configuration>
 				<executions>

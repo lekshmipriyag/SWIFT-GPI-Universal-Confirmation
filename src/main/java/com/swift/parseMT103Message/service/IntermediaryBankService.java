@@ -63,11 +63,11 @@ public class IntermediaryBankService {
 
     //create a document
     public ResponseEntity<ResponseData> sendMt103ToMongoDB(SwiftMessageMT103 swiftMessage) {
-
         List<SwiftMessageMT103> messageList = new ArrayList<>();
         boolean fieldsOk = true;
         try {
-            SwiftMessageMT103 message = new SwiftMessageMT103(parsedFields.get(0),
+            //SwiftMessageMT103 message = new SwiftMessageMT103(parsedFields.get(0),
+            swiftMessage = new SwiftMessageMT103(parsedFields.get(0),
                     parsedFields.get(1),
                     parsedFields.get(2),
                     parsedFields.get(3),
@@ -92,7 +92,7 @@ public class IntermediaryBankService {
                 }
             }
             logger.info("Mandatory Fields Format checking");
-            if(mandatoryFieldsFormatChecking() == false){
+            if (mandatoryFieldsFormatChecking() == false) {
                 result.setMessage("Something went wrong!. Please check the mandatory Fields Format.");
                 result.setMessages(null);
                 return new ResponseEntity<ResponseData>(result, HttpStatus.NOT_ACCEPTABLE);
@@ -107,10 +107,9 @@ public class IntermediaryBankService {
                 result.setMessage("Transaction denied!!. This transaction details are currently available in DB. ");
                 return new ResponseEntity<ResponseData>(result, HttpStatus.NOT_ACCEPTABLE);
             }
-
-            messageRepository.save(message); //data is saving to DB
+            messageRepository.save(swiftMessage); //data is saving to DB
             logger.info("Storing to MongoDB completed");
-            messageList.add(message);
+            messageList.add(swiftMessage);
             result.setMessages(messageList);
             result.setMessage("Successfully sent MT103 message to MongoDB");
             return new ResponseEntity<ResponseData>(result, HttpStatus.CREATED);
@@ -176,7 +175,7 @@ public class IntermediaryBankService {
     }
 
 
-    private ArrayList getMT103Fields(String UETR, MT103 mt) {
+    public ArrayList getMT103Fields(String UETR, MT103 mt) {
 
         String senderReferenceNumber = (mt.getField20() != null) ? mt.getField20().getValue() : null;
         String bankOperationCode = (mt.getField23B() != null) ? mt.getField23B().getValue() : null;
@@ -227,22 +226,22 @@ public class IntermediaryBankService {
         return parsedFields;
     }
 
-    private void logMT103FieldValues() {
-        logger.info("Sender's reference Number of MT103: " + parsedFields.get(0));
-        logger.info("Unique End-toEnd Transaction Number is: " + parsedFields.get(1));
-        logger.info("Bank Operation Code: " + parsedFields.get(2));
-        logger.info("Value Date/ Currency/Interbank Settled Amount: " + parsedFields.get(3));
-        logger.info("Payer Details: " + parsedFields.get(4));
-        logger.info("Beneficiary Details: " + parsedFields.get(5));
-        logger.info("Ordering Institution: " + parsedFields.get(6));
-        logger.info("Details of Charge: " + parsedFields.get(7));
-        logger.info("Exchange Rate: " + parsedFields.get(8));
-        logger.info("Receiver's Charges: " + parsedFields.get(9));
-        logger.info("Sender To Receiver Information: " + parsedFields.get(10));
-        logger.info("Sender Bank: "+ parsedFields.get(11));
-        logger.info("Sender's Charges: " + parsedFields.get(12));
-
-    }
+//    private void logMT103FieldValues() {
+//        logger.info("Sender's reference Number of MT103: " + parsedFields.get(0));
+//        logger.info("Unique End-toEnd Transaction Number is: " + parsedFields.get(1));
+//        logger.info("Bank Operation Code: " + parsedFields.get(2));
+//        logger.info("Value Date/ Currency/Interbank Settled Amount: " + parsedFields.get(3));
+//        logger.info("Payer Details: " + parsedFields.get(4));
+//        logger.info("Beneficiary Details: " + parsedFields.get(5));
+//        logger.info("Ordering Institution: " + parsedFields.get(6));
+//        logger.info("Details of Charge: " + parsedFields.get(7));
+//        logger.info("Exchange Rate: " + parsedFields.get(8));
+//        logger.info("Receiver's Charges: " + parsedFields.get(9));
+//        logger.info("Sender To Receiver Information: " + parsedFields.get(10));
+//        logger.info("Sender Bank: "+ parsedFields.get(11));
+//        logger.info("Sender's Charges: " + parsedFields.get(12));
+//
+//    }
 
     public void responseData() {
         result.setMessage("Failed");
